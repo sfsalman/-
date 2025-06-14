@@ -3,88 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Chat with Firebase</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <title>Animated SMS Sender</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        #chat-container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            height: 80vh; /* Set a height for the chat window */
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
-        #messages {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-            border-bottom: 1px solid #eee;
-            scroll-behavior: smooth; /* Smooth scrolling for new messages */
-        }
-        .message {
-            background-color: #e6f7ff;
-            padding: 8px 12px;
-            border-radius: 15px;
-            margin-bottom: 8px;
-            word-wrap: break-word;
-            max-width: 80%;
-        }
-        .message strong {
-            color: #007bff;
-        }
-        #input-area {
-            display: flex;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-top: 1px solid #eee;
-        }
-        #messageInput {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
             border-radius: 20px;
-            margin-right: 10px;
-            font-size: 16px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
         }
-        #sendButton {
-            background-color: #007bff;
+
+        .header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            animation: pulse 8s infinite linear;
+            z-index: 1;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+            outline: none;
+        }
+
+        .input-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
         }
-        #sendButton:hover {
-            background-color: #0056b3;
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        .btn:hover::after {
+            animation: shine 1.5s;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .status.success {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+            display: block;
+        }
+
+        .status.error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            display: block;
+        }
+
+        .floating-phone {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.2);
+            z-index: 2;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent);
+            opacity: 0;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(10%, 10%); }
+            50% { transform: translate(0, 20%); }
+            75% { transform: translate(-10%, 10%); }
+            100% { transform: translate(0, 0); }
+        }
+
+        @keyframes shine {
+            0% { left: -100%; opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { left: 100%; opacity: 0; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(-50%) translateY(0px); }
+            50% { transform: translateY(-50%) translateY(-15px); }
+            100% { transform: translateY(-50%) translateY(0px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .sending .spinner {
+            display: inline-block;
+        }
+
+        .sending .btn-text {
+            display: none;
         }
     </style>
 </head>
 <body>
+    <div class="container animate__animated animate__fadeInUp">
+        <div class="header">
+            <i class="fas fa-mobile-alt floating-phone"></i>
+            <h1>Send SMS Messages</h1>
+            <p>Quickly send text messages to any number</p>
+        </div>
 
-    <div id="chat-container">
-        <h1>Real-time Chat</h1>
-        <div id="messages">
-            </div>
-        <div id="input-area">
-            <input type="text" id="messageInput" placeholder="Type your message...">
-            <button id="sendButton">Send</button>
+        <div class="form-container">
+            <form id="smsForm">
+                <div class="input-group animate-fade-in delay-1">
+                    <label for="phoneNumber"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phoneNumber" placeholder="+8801XXXXXXXXX" required>
+                </div>
+
+                <div class="input-group animate-fade-in delay-2">
+                    <label for="message"><i class="fas fa-comment-alt"></i> Message</label>
+                    <textarea id="message" placeholder="Type your message here..." required></textarea>
+                </div>
+
+                <div class="animate-fade-in delay-3">
+                    <button type="submit" class="btn" id="sendBtn">
+                        <span class="spinner"></span>
+                        <span class="btn-text"><i class="fas fa-paper-plane"></i> Send Message</span>
+                    </button>
+                </div>
+
+                <div id="statusMessage" class="status"></div>
+            </form>
         </div>
     </div>
 
     <script>
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDrACqG_D7Dg9xImXWHtHdyyzWiXo1V7Pw",
             authDomain: "chat-xyz-78ab9.firebaseapp.com",
@@ -99,43 +313,114 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Get HTML elements
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const messagesDiv = document.getElementById('messages');
+        // DOM elements
+        const smsForm = document.getElementById('smsForm');
+        const phoneNumber = document.getElementById('phoneNumber');
+        const message = document.getElementById('message');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusMessage = document.getElementById('statusMessage');
 
-        // Function to send messages
-        sendButton.addEventListener('click', () => {
-            const messageText = messageInput.value;
-            if (messageText.trim() !== '') {
-                db.collection("messages").add({
-                    sender: "AnonymousUser", // ভবিষ্যতে Firebase Authentication দিয়ে ইউজারের নাম যোগ করতে পারিস
-                    message: messageText,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                })
-                .then(() => {
-                    messageInput.value = ''; // মেসেজ পাঠানোর পর ইনপুট খালি করে দে
-                })
-                .catch((error) => {
-                    console.error("Error writing document: ", error);
+        // Form submission
+        smsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Show loading state
+            sendBtn.classList.add('sending');
+            statusMessage.style.display = 'none';
+            
+            try {
+                // In a real app, you would integrate with an SMS gateway API here
+                // For demo purposes, we'll simulate sending and store in Firestore
+                
+                // Create a record in Firestore
+                await db.collection('smsMessages').add({
+                    phoneNumber: phoneNumber.value,
+                    message: message.value,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'sent'
                 });
+                
+                // Show success message
+                showStatus('Message sent successfully!', 'success');
+                
+                // Create confetti effect
+                createConfetti();
+                
+                // Reset form
+                smsForm.reset();
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showStatus('Failed to send message. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                sendBtn.classList.remove('sending');
             }
         });
 
-        // Listen for real-time updates to messages
-        db.collection("messages").orderBy("timestamp").onSnapshot((snapshot) => {
-            messagesDiv.innerHTML = ''; // নতুন মেসেজ আসার আগে পুরনো মেসেজ ক্লিয়ার করে দে
-            snapshot.forEach((doc) => {
-                const messageData = doc.data();
-                const messageElement = document.createElement('p');
-                messageElement.classList.add('message'); // স্টাইলিং এর জন্য ক্লাস যোগ করা
-                messageElement.innerHTML = `<strong>${messageData.sender}:</strong> ${messageData.message}`;
-                messagesDiv.appendChild(messageElement);
-            });
-            // নতুন মেসেজ এলে অটোমেটিকভাবে স্ক্রল করে সবার নিচের মেসেজে চলে যাওয়া
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status ' + type;
+            statusMessage.style.display = 'block';
+            
+            // Animate the status message
+            statusMessage.style.animation = 'none';
+            void statusMessage.offsetWidth; // Trigger reflow
+            statusMessage.style.animation = 'fadeIn 0.5s ease-out';
+        }
 
+        function createConfetti() {
+            const container = document.querySelector('.container');
+            const colors = ['#4361ee', '#3f37c9', '#4895ef', '#4cc9f0', '#7209b7'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = -10 + 'px';
+                confetti.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+                container.appendChild(confetti);
+                
+                // Animate each confetti piece
+                const animationDuration = Math.random() * 3 + 2;
+                confetti.style.animation = `fall ${animationDuration}s linear forwards`;
+                
+                // Set keyframes dynamically
+                const keyframes = `
+                    @keyframes fall {
+                        0% {
+                            transform: translateY(0) rotate(0deg);
+                            opacity: 1;
+                        }
+                        100% {
+                            transform: translateY(500px) rotate(${Math.random() * 360}deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                
+                const style = document.createElement('style');
+                style.innerHTML = keyframes;
+                document.head.appendChild(style);
+                
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                    style.remove();
+                }, animationDuration * 1000);
+            }
+        }
+
+        // Add animation to form elements on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-fade-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.style.animation = 'fadeIn 0.6s ease-out forwards';
+                }, index * 200);
+            });
+        });
     </script>
 </body>
 </html>

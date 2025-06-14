@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time Chat with Firebase</title>
+    <title>আমার রিয়েল-টাইম চ্যাট</title>
+
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.2.1/css/all.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
@@ -13,184 +17,386 @@
             font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #e0f2f7; /* Light blue background */
+            background-color: #e0f2f7;
             color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-        }
-        #chat-container {
-            width: 100%;
-            max-width: 700px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+        }
+
+        /* Video Background styles */
+        #background-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: 100;
+            height: 100;
+            z-index: -2; /* Ensure it's behind the blur layer */
+            transform: translate(-50%, -50%);
+            background-size: cover;
+        }
+
+        /* Blur Overlay for the video */
+        #blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.04); /* Match .main background color */
+            backdrop-filter: blur(4px); /* Apply blur directly to overlay */
+            z-index: -1; /* Above video, below .main content */
+        }
+
+        .main {
+            max-width: 800px;
+            width: 95%;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            transition: transform 1s ease, width 1s ease;
             display: flex;
             flex-direction: column;
-            height: 90vh; /* Responsive height */
+            height: 90vh;
+            max-height: 950px;
+            /* background-color and backdrop-filter moved to #blur-overlay */
         }
-        header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            font-size: 1.5em;
-            font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        .main:hover {
+            width: 96%;
+            max-width: 810px;
+        }
+
+        .header {
+            color: #fff;
             display: flex;
-            justify-content: space-between;
+            padding: 20px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #pfpname {
+            transition: letter-spacing 0.3s ease;
+        }
+        #pfpname:hover {
+            letter-spacing: 2px;
+        }
+
+        .notifications {
+            background: #2796db;
+            border-radius: 100%;
+            aspect-ratio: 1;
+            width: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 5px;
+            cursor: pointer;
+            transition: transform 2s ease;
+            font-size: 0.8em;
+        }
+        .notifications:hover {
+            transition: transform 2s ease;
+        }
+        .header .pfp {
+            aspect-ratio: 1;
+            width: 40px;
+            border-radius: 100%;
+            cursor: pointer;
+            transition: transform 1s ease;
+        }
+        .pfp:hover {
+            transform: scale(1.2);
+        }
+
+        .header .center {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+            width: 100%;
             align-items: center;
         }
-        .header-link {
-            color: white;
-            text-decoration: none;
-            font-size: 0.8em;
-            padding: 5px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+
+        .header .center div p {
+            margin: 0;
+            font-weight: 700;
+            margin-left: 10px;
+            font-size: 1.2em;
         }
-        .header-link:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-        #messages {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
+
+        .footer {
+            width: 100%;
+            height: auto;
+            padding: 11px;
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background-color: #f8fcfc;
+            align-items: center;
+            flex-shrink: 0;
         }
-        .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 20px;
-            line-height: 1.4;
-            position: relative;
-            word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-        .message.left {
-            align-self: flex-start;
-            background-color: #e0f7fa; /* Light cyan */
-            color: #333;
-            border-bottom-left-radius: 5px; /* Tweak for chat bubble look */
-        }
-        .message.right {
-            align-self: flex-end;
-            background-color: #007bff; /* Primary blue */
-            color: white;
-            border-bottom-right-radius: 5px; /* Tweak for chat bubble look */
-        }
-        .message strong {
-            display: block;
-            font-size: 0.8em;
-            color: #555;
-            margin-bottom: 3px;
-            font-weight: 500;
-        }
-        .message.right strong {
-            color: rgba(255, 255, 255, 0.8);
-        }
-        .timestamp {
-            font-size: 0.7em;
-            color: #999;
-            margin-top: 5px;
-            display: block;
-            text-align: right;
-        }
-        .message.right .timestamp {
-            color: rgba(255, 255, 255, 0.7);
-        }
-        #input-area {
-            display: flex;
-            padding: 15px 20px;
-            background-color: #ffffff;
-            border-top: 1px solid #eee;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-        }
-        #messageInput {
+
+        .text-box {
             flex-grow: 1;
-            padding: 12px 18px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: none;
+            padding: 8px 15px;
+            outline: none;
+            color: #fff;
             margin-right: 10px;
             font-size: 1em;
-            outline: none;
-            transition: border-color 0.3s ease;
         }
-        #messageInput:focus {
-            border-color: #007bff;
-        }
-        #sendButton {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 500;
-            transition: background-color 0.3s ease, transform 0.1s ease;
+
+        .send-ico {
+            color: #fff;
+            background: #2796db;
+            border-radius: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 13px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
-        #sendButton:hover {
+        .send-ico:hover {
+            background-color: #1a6cb2;
+            transform: scale(1.05);
+        }
+        .send-ico:active {
+            transform: scale(0.95);
+        }
+
+        .text-box::placeholder {
+            color: #c6c6c6;
+            font-family: BraahOne;
+        }
+
+        .content {
+            width: 100%;
+            flex-grow: 1;
+            padding: 11px;
+            color: #afafaf;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            scroll-behavior: smooth;
+        }
+        
+        .msg-btn-holder {
+            width: 100%;
+            display: flex;
+            margin-top: 10px;
+            position: relative;
+        }
+        .msg-btn {
+            color: #fff;
+            word-wrap: break-word;
+            border-radius: 15px;
+            display: inline-block;
+            max-width: 80%;
+            font-size: 14px;
+            font-family: "BraahOne";
+            padding: 10px 15px;
+            margin: 5px 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .msg-btn p {
+            margin: 0;
+        }
+        
+        .receiver-msg {
+            background: rgba(255, 255, 255, 0.2);
+            color: #eee;
+            float: none;
+            align-self: flex-start;
+            border-top-left-radius: 5px;
+        }
+        .sender-msg {
+            background: #2798fc;
+            float: none;
+            align-self: flex-end;
+            border-top-right-radius: 5px;
+        }
+        .message-timestamp {
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+            text-align: right;
+            display: block;
+        }
+        .receiver-msg .message-timestamp {
+            color: rgba(230, 230, 230, 0.7);
+        }
+
+        /* Delete button styles */
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            top: -5px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 10;
+        }
+        .receiver-msg + .delete-btn { /* Receiver message এর পাশে delete বাটন */
+            right: -5px;
+            left: auto;
+        }
+        .sender-msg + .delete-btn { /* Sender message এর পাশে delete বাটন */
+            right: auto;
+            left: -5px;
+        }
+        .msg-btn-holder.show-delete .delete-btn {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        /* Password Overlay */
+        #password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+        #password-box {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        #password-box h2 {
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+        #password-input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            width: 200px;
+            text-align: center;
+        }
+        #password-submit {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+        }
+        #password-submit:hover {
             background-color: #0056b3;
-            transform: translateY(-1px);
         }
-        #sendButton:active {
-            transform: translateY(0);
+        #password-error {
+            color: red;
+            margin-top: 10px;
+            font-size: 0.9em;
         }
+
         /* Media queries for responsiveness */
         @media (max-width: 768px) {
-            #chat-container {
+            .main {
+                width: 95%;
                 height: 95vh;
-                margin: 10px;
+                max-height: 95vh;
+                border-radius: 15px;
             }
-            body {
+            .header {
+                padding: 15px;
+            }
+            .header .center div p {
+                font-size: 1em;
+            }
+            .text-box {
+                padding: 10px 12px;
+            }
+            .send-ico {
                 padding: 10px;
             }
-        }
-        @media (max-width: 480px) {
-            header {
-                font-size: 1.2em;
-                padding: 12px 15px;
-            }
-            .header-link {
-                font-size: 0.7em;
-                padding: 3px 8px;
-            }
-            #input-area {
-                padding: 10px 15px;
-            }
-            #messageInput, #sendButton {
-                padding: 10px 15px;
-                font-size: 0.9em;
+            .msg-btn {
+                max-width: 90%;
+                font-size: 13px;
+                padding: 8px 12px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div id="chat-container">
-        <header>
-            Real-time Chat
-            <a href="profile.html" class="header-link">Profile</a>
-        </header>
-        <div id="messages">
+    <video autoplay muted loop id="background-video">
+        <source src="Bg.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div id="blur-overlay"></div>
+
+    <audio id="background-audio" loop muted>
+        <source src="bg a.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <div id="password-overlay">
+        <div id="password-box">
+            <h2>গোপন পাসওয়ার্ড দিন</h2>
+            <input type="password" id="password-input" placeholder="পাসওয়ার্ড">
+            <button id="password-submit">প্রবেশ করুন</button>
+            <p id="password-error" style="display:none;">ভুল পাসওয়ার্ড!</p>
+        </div>
+    </div>
+
+    <div class="main" style="display:none;">
+        <div class="header">
+            <i style="cursor:pointer;display:flex;float:left;" class="fas fa-arrow-left"></i>
+            <div class="notifications"><b>3</b></div>
+            <div class="center">
+                <div>
+                    <img class="pfp" src="https://cdn.pixabay.com/photo/2014/11/30/14/11/cat-551554_960_720.jpg">
+                    <p id="pfpname">polymars</p>
+                </div>
             </div>
-        <div id="input-area">
-            <input type="text" id="messageInput" placeholder="Type your message...">
-            <button id="sendButton">Send</button>
+        </div>
+
+        <div class="content">
+            </div>
+
+        <div class="footer">
+            <div style="width:100%;display:flex;align-items:center;">
+                <input placeholder="Message" class="text-box" id="messageInput">
+                <div class="send-ico" id="sendButton">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // তোর দেওয়া Firebase কনফিগ এখানে ব্যবহার করা হচ্ছে
         const firebaseConfig = {
             apiKey: "AIzaSyDrACqG_D7Dg9xImXWHtHdyyzWiXo1V7Pw",
             authDomain: "chat-xyz-78ab9.firebaseapp.com",
@@ -201,24 +407,115 @@
             measurementId: "G-8B91R7VJEL"
         };
 
-        // Initialize Firebase
+        // Firebase অ্যাপ ইনিশিয়ালাইজ করা হচ্ছে
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // Get HTML elements
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
-        const messagesDiv = document.getElementById('messages');
+        const messagesDiv = document.querySelector('.content');
+        const pfpName = document.getElementById('pfpname');
+        const backArrow = document.querySelector('.fa-arrow-left');
+        const pfpImg = document.querySelector('.header .pfp');
 
-        // সিমুলেটেড ইউজার আইডি (পরে Firebase Auth দিয়ে এটা রিয়েল হবে)
-        const currentUser = "User" + Math.floor(Math.random() * 1000); // আপাতত একটি র্যান্ডম ইউজার আইডি
+        const passwordOverlay = document.getElementById('password-overlay');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit');
+        const passwordError = document.getElementById('password-error');
+        const mainChatContainer = document.querySelector('.main');
+        const backgroundAudio = document.getElementById('background-audio');
 
-        // Function to send messages
-        sendButton.addEventListener('click', () => {
+        const SECRET_PASSWORD = "@1234";
+
+        let audioPlayed = false; // Flag to ensure audio plays only once on first user interaction
+
+        // Function to handle password submission
+        passwordSubmit.addEventListener('click', checkPassword);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        function checkPassword() {
+            if (passwordInput.value === SECRET_PASSWORD) {
+                passwordOverlay.style.display = 'none';
+                mainChatContainer.style.display = 'flex';
+                sessionStorage.setItem('chat_access_granted', 'true');
+                // Play audio if not already played
+                if (!audioPlayed) {
+                    backgroundAudio.muted = false; // Unmute audio
+                    backgroundAudio.play().then(() => {
+                        audioPlayed = true;
+                    }).catch(error => {
+                        console.error("Audio play failed:", error);
+                        // User might need to interact again if auto-play is blocked
+                    });
+                }
+            } else {
+                passwordError.style.display = 'block';
+                passwordInput.value = '';
+            }
+        }
+
+        // Check if access was already granted in this session
+        if (sessionStorage.getItem('chat_access_granted') === 'true') {
+            passwordOverlay.style.display = 'none';
+            mainChatContainer.style.display = 'flex';
+            // If already logged in, try to play audio on any click in main content
+            document.body.addEventListener('click', () => {
+                if (!audioPlayed) {
+                    backgroundAudio.muted = false; // Unmute audio
+                    backgroundAudio.play().then(() => {
+                        audioPlayed = true;
+                    }).catch(error => {
+                        console.error("Audio play failed:", error);
+                    });
+                }
+            }, { once: true }); // Play only on first click after successful login
+        } else {
+            // If not logged in, audio will play after password submission
+            document.body.addEventListener('click', () => {
+                // If password overlay is visible, any click will try to initiate audio.
+                // But actual play happens only after correct password and first user gesture.
+                if (passwordOverlay.style.display !== 'none' && !audioPlayed) {
+                    backgroundAudio.muted = false; // Unmute audio
+                    // We don't call play() here directly, as it's linked to passwordSubmit click
+                }
+            }, { once: true });
+        }
+
+
+        let currentUser = localStorage.getItem('chat_current_user');
+        if (!currentUser) {
+            currentUser = "GuestUser_" + Math.floor(Math.random() * 100000);
+            localStorage.setItem('chat_current_user', currentUser);
+        }
+        pfpName.textContent = currentUser;
+
+        pfpImg.addEventListener('click', () => {
+            window.location.href = 'profile.html';
+        });
+        pfpName.addEventListener('click', () => {
+            window.location.href = 'profile.html';
+        });
+        backArrow.addEventListener('click', () => {
+            history.back();
+        });
+
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
             const messageText = messageInput.value;
             if (messageText.trim() !== '') {
                 db.collection("messages").add({
-                    sender: currentUser, // এখানে সিমুলেটেড ইউজার আইডি ব্যবহার করা হচ্ছে
+                    sender: currentUser,
                     message: messageText,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 })
@@ -226,41 +523,89 @@
                     messageInput.value = '';
                 })
                 .catch((error) => {
-                    console.error("Error writing document: ", error);
+                    console.error("মেসেজ পাঠাতে সমস্যা হয়েছে: ", error);
                 });
             }
-        });
+        }
 
-        // Listen for real-time updates to messages
+        function deleteMessage(messageId) {
+            if (confirm("আপনি কি নিশ্চিত এই মেসেজটি ডিলিট করতে চান?")) {
+                db.collection("messages").doc(messageId).delete()
+                .then(() => {
+                    console.log("মেসেজ সফলভাবে ডিলিট করা হয়েছে!");
+                })
+                .catch((error) => {
+                    console.error("মেসেজ ডিলিট করতে সমস্যা হয়েছে: ", error);
+                });
+            }
+        }
+
         db.collection("messages").orderBy("timestamp").onSnapshot((snapshot) => {
-            messagesDiv.innerHTML = ''; // Clear existing messages
+            messagesDiv.innerHTML = '';
+
             snapshot.forEach((doc) => {
                 const messageData = doc.data();
-                const messageElement = document.createElement('div'); // Changed to div for better styling control
-                messageElement.classList.add('message');
+                const messageId = doc.id;
 
-                // Check if the message is from the current user
+                const msgBtnHolder = document.createElement('div');
+                msgBtnHolder.classList.add('msg-btn-holder');
+
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('msg-btn');
+                messageElement.dataset.id = messageId;
+
                 if (messageData.sender === currentUser) {
-                    messageElement.classList.add('right'); // Align right for current user
+                    messageElement.classList.add('sender-msg');
                 } else {
-                    messageElement.classList.add('left'); // Align left for others
+                    messageElement.classList.add('receiver-msg');
                 }
 
-                // Format timestamp
                 let time = '';
-                if (messageData.timestamp) {
+                if (messageData.timestamp && typeof messageData.timestamp.toDate === 'function') {
                     const date = messageData.timestamp.toDate();
+                    time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } else if (messageData.timestamp) {
+                    const date = new Date(messageData.timestamp);
                     time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
 
                 messageElement.innerHTML = `
-                    <strong>${messageData.sender}</strong>
-                    <span>${messageData.message}</span>
-                    <span class="timestamp">${time}</span>
+                    <p>${messageData.message}</p>
+                    <span class="message-timestamp">${messageData.sender} - ${time}</span>
                 `;
-                messagesDiv.appendChild(messageElement);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.classList.add('delete-btn');
+                deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteButton.addEventListener('click', () => deleteMessage(messageId));
+
+                let pressTimer;
+                messageElement.addEventListener('touchstart', () => {
+                    pressTimer = setTimeout(() => {
+                        msgBtnHolder.classList.add('show-delete');
+                    }, 800);
+                });
+                messageElement.addEventListener('touchend', () => {
+                    clearTimeout(pressTimer);
+                });
+                messageElement.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    msgBtnHolder.classList.add('show-delete');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!msgBtnHolder.contains(e.target) && !deleteButton.contains(e.target)) {
+                        msgBtnHolder.classList.remove('show-delete');
+                    }
+                });
+
+                msgBtnHolder.appendChild(messageElement);
+                if (messageData.sender === currentUser) {
+                     msgBtnHolder.appendChild(deleteButton);
+                }
+               
+                messagesDiv.appendChild(msgBtnHolder);
             });
-            // Auto-scroll to the bottom for new messages
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
 

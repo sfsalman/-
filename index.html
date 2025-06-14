@@ -1,38 +1,84 @@
 <!DOCTYPE html>
-<html lang="bn">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html>
+<head>
+  <title>Danger XYZ 💬</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
+    h2 { text-align: center; color: #f00; }
+    #chat { height: 400px; overflow-y: scroll; border: 2px solid #444; padding: 10px; background: #222; }
+    .msg { margin-bottom: 10px; }
+    .me { color: #0f0; }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 100%;
+      border-radius: 5px;
+      border: none;
+    }
+    #msgInput { background: #333; color: #fff; }
+    button { background: #f00; color: white; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>🚨 Danger XYZ 🚨</h2>
+  <div id="chat"></div>
+  <input id="msgInput" placeholder="Type your message..." />
+  <button onclick="sendMsg()">Send</button>
 
-    <title>SF Salman Xyz - ওয়েব দুনিয়ার রাজা</title>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrACqG_D7Dg9xImXWHtHdyyzWiXo1V7Pw",
+      authDomain: "chat-xyz-78ab9.firebaseapp.com",
+      projectId: "chat-xyz-78ab9",
+      storageBucket: "chat-xyz-78ab9.firebasestorage.app",
+      messagingSenderId: "124167820056",
+      appId: "1:124167820056:web:3c68671840e71e4a25846d",
+      measurementId: "G-8B91R7VJEL"
+    };
 
-    <meta name="description" content="SF Salman Xyz হচ্ছে একমাত্র ভাইরাল ওয়েবসাইট যেটা গুগলে সার্চ দিলে প্রথমেই আসে। কোডিং, ডিজাইন ও ফিউচার সব এক জায়গায়।">
-    <meta name="keywords" content="SF Salman Xyz, ওয়েবসাইট ডিজাইন, ভাইরাল ওয়েবসাইট, কোডিং শিখি, সেরা ওয়েবসাইট">
-    <meta name="author" content="SF Salman" />
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let user;
 
-    <!-- Facebook Preview -->
-    <meta property="og:title" content="SF Salman Xyz - ওয়েব দুনিয়ার রাজা" />
-    <meta property="og:description" content="সালমান ভাইয়ের ওয়েবসাইট, ভাইরাল হওয়ার জন্য জন্ম নিয়েছে!" />
-    <meta property="og:image" content="https://yourdomain.com/sf-cover.jpg" />
-    <meta property="og:url" content="https://yourdomain.com" />
-    <meta name="robots" content="index, follow" />
+    auth.signInAnonymously().then(() => {
+      user = auth.currentUser;
+      listenMessages();
+    });
 
-    <link rel="icon" href="https://yourdomain.com/favicon.ico" type="image/x-icon" />
-  </head>
-  <body style="font-family:sans-serif; text-align:center; padding:20px;">
+    const chatDiv = document.getElementById("chat");
+    const msgInput = document.getElementById("msgInput");
 
-    <h1>🖤 স্বাগতম SF Salman Xyz ওয়েবসাইটে 🖤</h1>
-    <p>এই ওয়েবসাইট এমন ভাবে SEO করা হচ্ছে, গুগলে সার্চ দিলেই প্রথমে SF SALMAN XYZ!</p>
+    function sendMsg() {
+      const msg = msgInput.value;
+      if (msg.trim() === "") return;
 
-    <a href="https://facebook.com/salmanvai" target="_blank">
-      👉 ফেসবুকে সালমান ভাইকে ফলো করুন
-    </a>
+      db.collection("messages").add({
+        uid: user.uid,
+        text: msg,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
-    <br><br>
-    <img src="https://yourdomain.com/sf.jpg" alt="SF Salman Xyz ব্যানার" width="300" />
+      msgInput.value = "";
+    }
 
-    <footer style="margin-top:30px;">
-      <p>© 2025 SF Salman Xyz. Powered by ঘাম + কোড + ক্রেজি আইডিয়া 😎</p>
-    </footer>
-  </body>
+    function listenMessages() {
+      db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+        chatDiv.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.classList.add("msg");
+          div.innerHTML = `<span class="${data.uid === user.uid ? 'me' : ''}">${data.text}</span>`;
+          chatDiv.appendChild(div);
+        });
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      });
+    }
+  </script>
+</body>
 </html>

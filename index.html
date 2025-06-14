@@ -5,33 +5,210 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
   <style>
-    body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; }
-    h2 { text-align: center; color: #f00; }
-    #chat { height: 400px; overflow-y: scroll; border: 2px solid #444; padding: 10px; background: #222; }
-    .msg { margin-bottom: 10px; }
-    .me { color: #0f0; }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 10px;
-      width: 100%;
-      border-radius: 5px;
-      border: none;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
-    #msgInput { background: #333; color: #fff; }
-    button { background: #f00; color: white; cursor: pointer; }
+    h2 {
+      text-align: center;
+      color: #ff4d4d;
+      margin-bottom: 20px;
+      font-size: 2.2em;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    }
+    #chat-container {
+      width: 100%;
+      max-width: 600px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #username-section {
+      padding: 15px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      gap: 10px;
+      background: #333;
+    }
+    #usernameInput {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: #444;
+      color: #eee;
+      font-size: 1em;
+    }
+    #setUsernameBtn {
+      padding: 10px 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s ease;
+    }
+    #setUsernameBtn:hover {
+      background: #0056b3;
+    }
+    #chat {
+      flex-grow: 1;
+      height: 400px;
+      overflow-y: auto;
+      padding: 15px;
+      background: #222;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+      position: relative;
+    }
+    .msg {
+      padding: 10px 15px;
+      border-radius: 15px;
+      word-wrap: break-word;
+      font-size: 0.95em;
+      line-height: 1.4;
+      position: relative;
+      background: #444; /* Default background */
+    }
+    .msg-info {
+      font-size: 0.75em;
+      color: #999;
+      margin-bottom: 5px;
+    }
+    .msg-username {
+      font-weight: bold;
+      color: #b3e0ff; /* Username color for others */
+    }
+    .me .msg-username {
+      color: #90ee90; /* Username color for self */
+    }
+
+    /* Styles for sender (me) */
+    .me {
+      align-self: flex-end;
+      background-color: #007bff; /* Blue for messages from me */
+      color: white;
+    }
+    .me .msg-info {
+      align-self: flex-end;
+      color: #ddd;
+    }
+    .me .msg-delete-btn {
+      right: 5px;
+      left: auto;
+    }
+
+    /* Styles for others */
+    .other {
+      align-self: flex-start;
+      background-color: #444; /* Darker grey for messages from others */
+      color: #e0e0e0;
+    }
+    .other .msg-info {
+      align-self: flex-start;
+      color: #999;
+    }
+    .msg-timestamp {
+      font-size: 0.7em;
+      color: #777;
+      margin-top: 3px;
+      display: block;
+    }
+    .msg-delete-btn {
+      position: absolute;
+      top: -5px; /* Adjust as needed */
+      left: -5px; /* Adjust as needed */
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.7em;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+    }
+    .msg-wrapper:hover .msg-delete-btn {
+      opacity: 1;
+    }
+
+    #message-input-section {
+      padding: 15px;
+      border-top: 1px solid #333;
+      display: flex;
+      gap: 10px;
+      background: #333;
+    }
+    #msgInput {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: #444;
+      color: #eee;
+      font-size: 1em;
+    }
+    button {
+      padding: 10px 15px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #cc3333;
+    }
   </style>
 </head>
 <body>
-  <h2>🚨 Danger XYZ 🚨</h2>
-  <div id="chat"></div>
-  <input id="msgInput" placeholder="Type your message..." />
-  <button onclick="sendMsg()">Send</button>
+  <h2>🚨 Danger XYZ Chat 🚨</h2>
+
+  <div id="chat-container">
+    <div id="username-section">
+      <input id="usernameInput" placeholder="Enter your username..." />
+      <button id="setUsernameBtn">Set Username</button>
+    </div>
+
+    <div id="chat"></div>
+
+    <div id="message-input-section">
+      <input id="msgInput" placeholder="Type your message..." />
+      <button onclick="sendMsg()">Send</button>
+    </div>
+  </div>
 
   <script>
+    // তোর Firebase প্রজেক্টের কনফিগারেশন এখানে হবে
     const firebaseConfig = {
-      apiKey: "AIzaSyDrACqG_D7Dg9xImXWHtHdyyzWiXo1V7Pw",
+      apiKey: "AIzaSyDrACqG_D7Dg9xImXWHtHdyyzWiXo1V7Pw", // তোর নিজস্ব API Key
       authDomain: "chat-xyz-78ab9.firebaseapp.com",
       projectId: "chat-xyz-78ab9",
       storageBucket: "chat-xyz-78ab9.firebasestorage.app",
@@ -40,43 +217,118 @@
       measurementId: "G-8B91R7VJEL"
     };
 
+    // Firebase ইনিশিয়ালাইজ করা হচ্ছে
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
-    let user;
 
-    auth.signInAnonymously().then(() => {
-      user = auth.currentUser;
-      listenMessages();
-    });
+    let user = null;
+    let username = localStorage.getItem('chatUsername') || ''; // লোকাল স্টোরেজ থেকে ইউজারনেম লোড করা হচ্ছে
 
     const chatDiv = document.getElementById("chat");
     const msgInput = document.getElementById("msgInput");
+    const usernameInput = document.getElementById("usernameInput");
+    const setUsernameBtn = document.getElementById("setUsernameBtn");
 
+    // ইউজারনেম ইনপুট ফিল্ড আপডেট করা
+    usernameInput.value = username;
+
+    // অ্যানোনিমাসলি সাইন ইন করা
+    auth.signInAnonymously().then(() => {
+      user = auth.currentUser;
+      console.log("Signed in anonymously with UID:", user.uid);
+      listenMessages();
+    }).catch(error => {
+      console.error("Error signing in anonymously:", error);
+      alert("চ্যাট লোড করতে সমস্যা হচ্ছে। ইন্টারনেট সংযোগ চেক করো।");
+    });
+
+    // ইউজারনেম সেট করার ফাংশন
+    setUsernameBtn.addEventListener('click', () => {
+      const newUsername = usernameInput.value.trim();
+      if (newUsername) {
+        username = newUsername;
+        localStorage.setItem('chatUsername', username); // লোকাল স্টোরেজে ইউজারনেম সেভ করা
+        alert(`তোমার ইউজারনেম সেট করা হয়েছে: ${username}`);
+      } else {
+        alert("দয়া করে একটি ইউজারনেম দাও।");
+      }
+    });
+
+    // মেসেজ পাঠানোর ফাংশন
     function sendMsg() {
       const msg = msgInput.value;
-      if (msg.trim() === "") return;
+      if (msg.trim() === "") return; // খালি মেসেজ পাঠানো যাবে না
+      if (!username) {
+        alert("মেসেজ পাঠানোর আগে দয়া করে একটি ইউজারনেম সেট করো।");
+        return;
+      }
 
       db.collection("messages").add({
         uid: user.uid,
+        username: username, // ইউজারনেম যোগ করা হয়েছে
         text: msg,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        msgInput.value = ""; // মেসেজ পাঠানোর পর ইনপুট খালি করা
+      }).catch(error => {
+        console.error("Error sending message:", error);
+        alert("মেসেজ পাঠাতে সমস্যা হয়েছে।");
       });
-
-      msgInput.value = "";
     }
 
+    // মেসেজ ডিলিট করার ফাংশন
+    function deleteMsg(messageId) {
+      if (confirm("তুমি কি এই মেসেজটা ডিলিট করতে চাও?")) {
+        db.collection("messages").doc(messageId).delete().then(() => {
+          console.log("Document successfully deleted!");
+        }).catch(error => {
+          console.error("Error removing document: ", error);
+          alert("মেসেজ ডিলিট করতে সমস্যা হয়েছে।");
+        });
+      }
+    }
+
+    // মেসেজ রিয়েল-টাইমে শোনা
     function listenMessages() {
       db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
-        chatDiv.innerHTML = "";
+        chatDiv.innerHTML = ""; // প্রতিবার নতুন ডেটা এলে চ্যাট খালি করা
         snapshot.forEach(doc => {
           const data = doc.data();
-          const div = document.createElement("div");
-          div.classList.add("msg");
-          div.innerHTML = `<span class="${data.uid === user.uid ? 'me' : ''}">${data.text}</span>`;
-          chatDiv.appendChild(div);
+          const messageId = doc.id; // মেসেজের ID পাওয়া যাচ্ছে
+          const messageUid = data.uid;
+          const messageUsername = data.username || "Anonymous"; // যদি ইউজারনেম না থাকে, 'Anonymous' দেখাবে
+          const messageText = data.text;
+          const messageTimestamp = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : 'Just now';
+
+          const msgWrapper = document.createElement("div");
+          msgWrapper.classList.add("msg-wrapper");
+          msgWrapper.classList.add(messageUid === user.uid ? 'me' : 'other'); // নিজের মেসেজ নাকি অন্যের, তা চিহ্নিত করা
+
+          const msgInfoDiv = document.createElement("div");
+          msgInfoDiv.classList.add("msg-info");
+          msgInfoDiv.innerHTML = `<span class="msg-username">${messageUsername}</span> <span class="msg-timestamp">${messageTimestamp}</span>`;
+          msgWrapper.appendChild(msgInfoDiv);
+
+          const msgDiv = document.createElement("div");
+          msgDiv.classList.add("msg");
+          msgDiv.textContent = messageText; // innerHTML এর বদলে textContent ব্যবহার করা হচ্ছে নিরাপত্তার জন্য
+
+          // নিজের পাঠানো মেসেজ হলে ডিলিট বাটন যোগ করা
+          if (messageUid === user.uid) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.classList.add("msg-delete-btn");
+            deleteBtn.textContent = "X";
+            deleteBtn.onclick = () => deleteMsg(messageId);
+            msgWrapper.appendChild(deleteBtn);
+          }
+          msgWrapper.appendChild(msgDiv);
+          chatDiv.appendChild(msgWrapper);
         });
-        chatDiv.scrollTop = chatDiv.scrollHeight;
+        chatDiv.scrollTop = chatDiv.scrollHeight; // চ্যাট উইন্ডো নিচে স্ক্রল করা
+      }, error => {
+        console.error("Error listening to messages:", error);
+        alert("মেসেজ লোড করতে সমস্যা হয়েছে।");
       });
     }
   </script>
